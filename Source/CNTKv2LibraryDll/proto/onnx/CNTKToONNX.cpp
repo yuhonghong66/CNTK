@@ -4603,6 +4603,7 @@ onnxruntime::Node* CNTKToONNXHelper::CreateNode(const FunctionPtr& src,
     {
         return CreateONNXNodesForFlatten(src, graph, functionNodes, variableNodes, compositeOutputsMap, scanLoops, createLoopIndex);
     }
+
     //
     // If this block node equivalent to a primitive ONNX OP, then treated as such.
     // And just maps its argument to ONNX node.
@@ -6374,6 +6375,14 @@ onnxruntime::Node* CNTKToONNXHelper::AddNode(const FunctionPtr& src, onnxruntime
             // reduce over the first axis.
             node->AddAttribute("axes", std::vector<int64_t>(1, 0));
             node->AddAttribute("keepdims", static_cast<int64_t>(0));
+        }
+        else if (src->OpName() == L"Unpooling")
+        {
+            // Create output_shape input.
+            std::vector<int64_t> outputShape = ToINTS(*orderedInputs[1]->TypeAsProto());
+            onnxruntime::NodeArg &shapeInputArg = CreateAddShapeNodeArg(graph, outputShape, orderedInputs[1]->Name() + "_shape");
+            orderedInputs.push_back(&shapeInputArg);
+            node = graph->AddNode(nodeName, ToOPName(src), "", orderedInputs, outputs);
         }
         else
         {
